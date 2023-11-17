@@ -3,6 +3,7 @@ package templates
 import (
 	"embed"
 	"fmt"
+	"html/template"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -146,17 +147,32 @@ func createDirectory(path string) error {
 	return nil
 }
 
-// createFile copies a file from source and replaces values
+// createFile copies a file from source and replaces values using text/template
 func createFile(src, dest string, replacements map[string]interface{}) error {
+	// Read the file content from the embedded file system
 	data, err := sourceFiles.ReadFile(src)
 	if err != nil {
 		return err
 	}
 
-	newData := replaceValues(string(data), replacements)
-	if err := os.WriteFile(dest, []byte(newData), 0644); err != nil {
-		return fmt.Errorf("unable to create file %s: %v", dest, err)
+	// Create a new template with the file content
+	tmpl, err := template.New("file").Parse(string(data))
+	if err != nil {
+		return fmt.Errorf("error creating template: %s %v", data, err)
 	}
+
+	// Create the destination file
+	file, err := os.Create(dest)
+	if err != nil {
+		return fmt.Errorf("error creating file %s: %v", dest, err)
+	}
+	defer file.Close()
+
+	// Execute the template with the replacements and write to the destination file
+	if err := tmpl.Execute(file, replacements); err != nil {
+		return fmt.Errorf("error executing template: %v", err)
+	}
+
 	return nil
 }
 
