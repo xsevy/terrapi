@@ -44,15 +44,18 @@ resource "aws_appsync_datasource" "%s_data_source" {
 // CreateResources creates resources based on the specified ID
 func CreateResources(id, dest string, replacements map[string]interface{}) error {
 	src := fmt.Sprintf("source/%s", id)
+	var f func(src, dest string, replacements map[string]interface{}) error
 
 	switch id {
 	case helpers.ResourceIDs.CreateAppSyncAPI:
-		return createAppSyncApi(src, dest, replacements)
+		f = createAppSyncApi
 	case helpers.ResourceIDs.CreateAppSyncDataSource:
-		return createAppSyncDataSource(src, dest, replacements)
+		f = createAppSyncDataSource
 	default:
 		return fmt.Errorf("ID %s not found in ResourceIDs", id)
 	}
+
+	return f(src, dest, replacements)
 }
 
 // createAppSyncDataSource creates resources for AppSync API
@@ -130,7 +133,7 @@ func copyFiles(src, dest string, replacements map[string]interface{}) error {
 		}
 
 		relativePath, _ := filepath.Rel(src, path)
-		newPath := filepath.Join(dest, replaceValues(relativePath, replacements))
+		newPath := filepath.Join(dest, renameFile(relativePath, replacements))
 
 		if d.IsDir() {
 			return createDirectory(newPath)
@@ -149,26 +152,22 @@ func createDirectory(path string) error {
 
 // createFile copies a file from source and replaces values using text/template
 func createFile(src, dest string, replacements map[string]interface{}) error {
-	// Read the file content from the embedded file system
 	data, err := sourceFiles.ReadFile(src)
 	if err != nil {
 		return err
 	}
 
-	// Create a new template with the file content
 	tmpl, err := template.New("file").Parse(string(data))
 	if err != nil {
 		return fmt.Errorf("error creating template: %s %v", data, err)
 	}
 
-	// Create the destination file
 	file, err := os.Create(dest)
 	if err != nil {
 		return fmt.Errorf("error creating file %s: %v", dest, err)
 	}
 	defer file.Close()
 
-	// Execute the template with the replacements and write to the destination file
 	if err := tmpl.Execute(file, replacements); err != nil {
 		return fmt.Errorf("error executing template: %v", err)
 	}
@@ -176,8 +175,8 @@ func createFile(src, dest string, replacements map[string]interface{}) error {
 	return nil
 }
 
-// replaceValues replaces values using given map
-func replaceValues(data string, replacements map[string]interface{}) string {
+// renameFile replaces values using given map
+func renameFile(data string, replacements map[string]interface{}) string {
 	for key, value := range replacements {
 		data = strings.ReplaceAll(data, "{{"+key+"}}", fmt.Sprintf("%v", value))
 	}
