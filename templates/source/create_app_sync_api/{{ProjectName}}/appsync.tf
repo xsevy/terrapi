@@ -4,7 +4,7 @@ resource "aws_appsync_graphql_api" "appsync" {
   authentication_type = "AWS_LAMBDA"
 
   lambda_authorizer_config {
-    authorizer_uri = ""
+    authorizer_uri = data.aws_lambda_function.authorizer.arn
   }
 }
 
