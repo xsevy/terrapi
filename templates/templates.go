@@ -7,18 +7,16 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/xsevy/terrapi/helpers"
 	"github.com/xsevy/terrapi/helpers/functions"
+	"github.com/xsevy/terrapi/messages"
 )
 
-var (
-	//go:embed source/*/*/.gitignore source/*/*/.terrapi source/*/*/resolvers/.gitkeep source/*
-	sourceFiles embed.FS
-
-	commonRequiredFields = []string{"project_name"}
-)
+//go:embed source/*/*/.gitignore source/*/*/.terrapi source/*/*/resolvers/.gitkeep source/*
+var sourceFiles embed.FS
 
 const (
 	configFileName               = ".terrapi"
@@ -42,9 +40,9 @@ resource "aws_appsync_datasource" "%s_data_source" {
 )
 
 // CreateResources creates resources based on the specified ID
-func CreateResources(id, dest string, replacements map[string]interface{}) error {
+func CreateResources(id, dest string, replacements *messages.CreateResourceMsg) error {
 	src := fmt.Sprintf("source/%s", id)
-	var f func(src, dest string, replacements map[string]interface{}) error
+	var f func(src, dest string, replacements *messages.CreateResourceMsg) error
 
 	switch id {
 	case helpers.ResourceIDs.CreateAppSyncAPI:
@@ -59,8 +57,8 @@ func CreateResources(id, dest string, replacements map[string]interface{}) error
 }
 
 // createAppSyncDataSource creates resources for AppSync API
-func createAppSyncDataSource(src, dest string, replacements map[string]interface{}) error {
-	if err := checkRequiredFields(commonRequiredFields, replacements); err != nil {
+func createAppSyncDataSource(src, dest string, replacements *messages.CreateResourceMsg) error {
+	if err := checkRequiredFields(replacements.ProjectName); err != nil {
 		return err
 	}
 
@@ -73,7 +71,7 @@ func createAppSyncDataSource(src, dest string, replacements map[string]interface
 	}
 
 	// adding new module to main file
-	newModuleContent := fmt.Sprintf(newModuleContent, replacements["project_name"], replacements["project_name"])
+	newModuleContent := fmt.Sprintf(newModuleContent, replacements.ProjectName, replacements.ProjectName)
 	if err := functions.AppendTextToFile(terraformApiMainFileName, newModuleContent); err != nil {
 		return err
 	}
@@ -81,9 +79,9 @@ func createAppSyncDataSource(src, dest string, replacements map[string]interface
 	// adding resolver and datasource to datasources file
 	newDataSourceContent := fmt.Sprintf(
 		newDataSourceContent,
-		replacements["project_name"],
-		replacements["project_name"],
-		replacements["project_name"],
+		replacements.ProjectName,
+		replacements.ProjectName,
+		replacements.ProjectName,
 	)
 	if err := functions.AppendTextToFile(terraformDataSourcesFileName, newDataSourceContent); err != nil {
 		return err
@@ -93,8 +91,8 @@ func createAppSyncDataSource(src, dest string, replacements map[string]interface
 }
 
 // createAppSyncApi creates resources for AppSync API
-func createAppSyncApi(src, dest string, replacements map[string]interface{}) error {
-	if err := checkRequiredFields(commonRequiredFields, replacements); err != nil {
+func createAppSyncApi(src, dest string, replacements *messages.CreateResourceMsg) error {
+	if err := checkRequiredFields(replacements.ProjectName); err != nil {
 		return err
 	}
 
@@ -115,9 +113,9 @@ func checkConfigFileExists() error {
 }
 
 // checkRequiredFields checks if required fields are present
-func checkRequiredFields(requiredFields []string, replacements map[string]interface{}) error {
-	for _, field := range requiredFields {
-		if _, ok := replacements[field]; !ok {
+func checkRequiredFields(fields ...interface{}) error {
+	for _, field := range fields {
+		if field == nil {
 			return fmt.Errorf("missing required field %s", field)
 		}
 	}
@@ -126,7 +124,7 @@ func checkRequiredFields(requiredFields []string, replacements map[string]interf
 }
 
 // copyFiles copies files from src to dest
-func copyFiles(src, dest string, replacements map[string]interface{}) error {
+func copyFiles(src, dest string, replacements *messages.CreateResourceMsg) error {
 	return fs.WalkDir(sourceFiles, src, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -151,7 +149,7 @@ func createDirectory(path string) error {
 }
 
 // createFile copies a file from source and replaces values using text/template
-func createFile(src, dest string, replacements map[string]interface{}) error {
+func createFile(src, dest string, replacements *messages.CreateResourceMsg) error {
 	data, err := sourceFiles.ReadFile(src)
 	if err != nil {
 		return err
@@ -175,10 +173,21 @@ func createFile(src, dest string, replacements map[string]interface{}) error {
 	return nil
 }
 
-// renameFile replaces values using given map
-func renameFile(data string, replacements map[string]interface{}) string {
-	for key, value := range replacements {
-		data = strings.ReplaceAll(data, "{{"+key+"}}", fmt.Sprintf("%v", value))
+// renameFile replaces placeholders in the data string with values from the replacements struct.
+func renameFile(data string, replacements *messages.CreateResourceMsg) string {
+	// Użycie odbicia do dostępu do pól struktury
+	v := reflect.ValueOf(replacements).Elem()
+
+	// Iteracja przez wszystkie pola w strukturze
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Type().Field(i)
+		value := v.Field(i)
+
+		// Zastępowanie każdego znalezionego tagu szablonu jego wartością
+		placeholder := fmt.Sprintf("{{%s}}", field.Name)
+		if strings.Contains(data, placeholder) {
+			data = strings.ReplaceAll(data, placeholder, fmt.Sprintf("%v", value.Interface()))
+		}
 	}
 	return data
 }

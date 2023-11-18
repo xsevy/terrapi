@@ -1,4 +1,4 @@
-# {{.project_name}}
+# {{.ProjectName}}
 
 ---
 Data source created with [terrapi]
