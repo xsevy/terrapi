@@ -178,12 +178,10 @@ func renameFile(data string, replacements *messages.CreateResourceMsg) string {
 	// Użycie odbicia do dostępu do pól struktury
 	v := reflect.ValueOf(replacements).Elem()
 
-	// Iteracja przez wszystkie pola w strukturze
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Type().Field(i)
 		value := v.Field(i)
 
-		// Zastępowanie każdego znalezionego tagu szablonu jego wartością
 		placeholder := fmt.Sprintf("{{%s}}", field.Name)
 		if strings.Contains(data, placeholder) {
 			data = strings.ReplaceAll(data, placeholder, fmt.Sprintf("%v", value.Interface()))
