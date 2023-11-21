@@ -127,14 +127,12 @@ func checkRequiredFields(fields ...interface{}) error {
 func copyFiles(fsys fs.FS, src, dest string, replacements *messages.CreateResourceMsg) error {
 	return fs.WalkDir(fsys, src, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-      os.RemoveAll(dest)
 			return err
 		}
 
 		relativePath, _ := filepath.Rel(src, path)
 		newPath, err := renameFile(relativePath, replacements)
 		if err != nil {
-      os.RemoveAll(dest)
 			return err
 		}
 		newPath = filepath.Join(dest, newPath)
