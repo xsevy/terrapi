@@ -144,7 +144,10 @@ Third line`,
 
 			destDir := "dest"
 			if _, err := os.Stat(destDir); os.IsNotExist(err) {
-				os.Mkdir(destDir, os.ModePerm)
+				err := os.Mkdir(destDir, os.ModePerm)
+				if err != nil {
+					t.Error("failed to create directory")
+				}
 			}
 			defer os.RemoveAll(destDir)
 
