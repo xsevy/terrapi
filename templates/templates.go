@@ -136,7 +136,7 @@ func copyFiles(src, dest string, replacements *messages.CreateResourceMsg) error
 		if d.IsDir() {
 			return createDirectory(newPath)
 		}
-		return createFile(path, newPath, replacements)
+		return createFile(sourceFiles, path, newPath, replacements)
 	})
 }
 
@@ -149,8 +149,8 @@ func createDirectory(path string) error {
 }
 
 // createFile copies a file from source and replaces values using text/template
-func createFile(src, dest string, replacements *messages.CreateResourceMsg) error {
-	data, err := sourceFiles.ReadFile(src)
+func createFile(fsys fs.FS, src, dest string, replacements *messages.CreateResourceMsg) error {
+	data, err := fs.ReadFile(fsys, src)
 	if err != nil {
 		return err
 	}
