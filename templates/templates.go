@@ -66,7 +66,7 @@ func createAppSyncDataSource(src, dest string, replacements *messages.CreateReso
 		return err
 	}
 
-	if err := copyFiles(src, dest, replacements); err != nil {
+	if err := copyFiles(sourceFiles, src, dest, replacements); err != nil {
 		return err
 	}
 
@@ -96,7 +96,7 @@ func createAppSyncApi(src, dest string, replacements *messages.CreateResourceMsg
 		return err
 	}
 
-	if err := copyFiles(src, dest, replacements); err != nil {
+	if err := copyFiles(sourceFiles, src, dest, replacements); err != nil {
 		return err
 	}
 
@@ -124,8 +124,8 @@ func checkRequiredFields(fields ...interface{}) error {
 }
 
 // copyFiles copies files from src to dest
-func copyFiles(src, dest string, replacements *messages.CreateResourceMsg) error {
-	return fs.WalkDir(sourceFiles, src, func(path string, d fs.DirEntry, err error) error {
+func copyFiles(fsys fs.FS, src, dest string, replacements *messages.CreateResourceMsg) error {
+	return fs.WalkDir(fsys, src, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -136,7 +136,7 @@ func copyFiles(src, dest string, replacements *messages.CreateResourceMsg) error
 		if d.IsDir() {
 			return createDirectory(newPath)
 		}
-		return createFile(sourceFiles, path, newPath, replacements)
+		return createFile(fsys, path, newPath, replacements)
 	})
 }
 
