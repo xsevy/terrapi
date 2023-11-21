@@ -39,6 +39,21 @@ resource "aws_appsync_datasource" "%s_data_source" {
 }`
 )
 
+type creationRecord struct {
+	createdPaths []string
+}
+
+func (r *creationRecord) add(path string) {
+	r.createdPaths = append(r.createdPaths, path)
+}
+
+func (r *creationRecord) rollback() {
+	for i := len(r.createdPaths) - 1; i >= 0; i-- {
+		path := r.createdPaths[i]
+		os.RemoveAll(path)
+	}
+}
+
 // CreateResources creates resources based on the specified ID
 func CreateResources(id, dest string, replacements *messages.CreateResourceMsg) error {
 	src := fmt.Sprintf("source/%s", id)
@@ -125,7 +140,9 @@ func checkRequiredFields(fields ...interface{}) error {
 
 // copyFiles copies files from src to dest
 func copyFiles(fsys fs.FS, src, dest string, replacements *messages.CreateResourceMsg) error {
-	return fs.WalkDir(fsys, src, func(path string, d fs.DirEntry, err error) error {
+	record := creationRecord{}
+
+	err := fs.WalkDir(fsys, src, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -138,10 +155,24 @@ func copyFiles(fsys fs.FS, src, dest string, replacements *messages.CreateResour
 		newPath = filepath.Join(dest, newPath)
 
 		if d.IsDir() {
-			return createDirectory(newPath)
+			if err := createDirectory(newPath); err != nil {
+				return err
+			}
+		} else {
+			if err := createFile(fsys, path, newPath, replacements); err != nil {
+				return err
+			}
 		}
-		return createFile(fsys, path, newPath, replacements)
+		record.add(newPath)
+
+		return nil
 	})
+	if err != nil {
+		record.rollback()
+		return err
+	}
+
+	return nil
 }
 
 // createDirectory creates a directory
