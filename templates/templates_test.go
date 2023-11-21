@@ -179,3 +179,60 @@ Third line`,
 		})
 	}
 }
+
+func TestCreateDirectory(t *testing.T) {
+	tcs := []struct {
+		name        string
+		path        string
+		cleanUpPath string
+		expectError bool
+	}{
+		{
+			name:        "Create new directory",
+			path:        "testDir1",
+			cleanUpPath: "testDir1",
+			expectError: false,
+		},
+		{
+			name:        "Create nested directory",
+			path:        "testDir2/nestedDir",
+			cleanUpPath: "testDir2/",
+			expectError: false,
+		},
+		{
+			name:        "Create existing directory",
+			path:        "testDir1",
+			cleanUpPath: "testDir1",
+			expectError: false,
+		},
+		{
+			name:        "Invalid directory path",
+			path:        "\x00",
+			cleanUpPath: "",
+			expectError: true,
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			defer os.RemoveAll(tc.cleanUpPath)
+
+			err := createDirectory(tc.path)
+
+			if tc.expectError {
+				if err == nil {
+					t.Error("expected error, got nil")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			if _, err := os.Stat(tc.path); os.IsNotExist(err) {
+				t.Errorf("directory %s was not created", tc.path)
+			}
+		})
+	}
+}
