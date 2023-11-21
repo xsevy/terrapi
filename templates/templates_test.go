@@ -10,55 +10,99 @@ import (
 )
 
 func TestRenameFile(t *testing.T) {
-	replacements := &messages.CreateResourceMsg{
-		ProjectName: "project_name_test",
-	}
-
 	tcs := []struct {
-		name     string
-		data     string
-		expected string
+		replacements messages.CreateResourceMsg
+		name         string
+		data         string
+		expected     string
+		expectError  bool
 	}{
 		{
-			name:     "Basic replacement",
-			data:     "{{ProjectName}}",
-			expected: "project_name_test",
+			name:        "Basic replacement",
+			data:        "{{ProjectName}}",
+			expected:    "project_name_test",
+			expectError: false,
+			replacements: messages.CreateResourceMsg{
+				ProjectName: "project_name_test",
+			},
 		},
 		{
-			name:     "Multiple replacements",
-			data:     "{{ProjectName}}{{ProjectName}}",
-			expected: "project_name_testproject_name_test",
+			name:        "Multiple replacements",
+			data:        "{{ProjectName}}{{ProjectName}}",
+			expected:    "project_name_testproject_name_test",
+			expectError: false,
+			replacements: messages.CreateResourceMsg{
+				ProjectName: "project_name_test",
+			},
 		},
 		{
-			name:     "Replacement with text before",
-			data:     "xyz{{ProjectName}}",
-			expected: "xyzproject_name_test",
+			name:        "Replacement with text before",
+			data:        "xyz{{ProjectName}}",
+			expected:    "xyzproject_name_test",
+			expectError: false,
+			replacements: messages.CreateResourceMsg{
+				ProjectName: "project_name_test",
+			},
 		},
 		{
-			name:     "Replacement with text after",
-			data:     "{{ProjectName}}xyz",
-			expected: "project_name_testxyz",
+			name:        "Replacement with text after",
+			data:        "{{ProjectName}}xyz",
+			expected:    "project_name_testxyz",
+			expectError: false,
+			replacements: messages.CreateResourceMsg{
+				ProjectName: "project_name_test",
+			},
 		},
 		{
-			name:     "Replacement between text",
-			data:     "abc{{ProjectName}}def",
-			expected: "abcproject_name_testdef",
+			name:        "Replacement between text",
+			data:        "abc{{ProjectName}}def",
+			expected:    "abcproject_name_testdef",
+			expectError: false,
+			replacements: messages.CreateResourceMsg{
+				ProjectName: "project_name_test",
+			},
 		},
 		{
-			name:     "Replacement with separator",
-			data:     "{{ProjectName}}_xyz",
-			expected: "project_name_test_xyz",
+			name:        "Replacement with separator",
+			data:        "{{ProjectName}}_xyz",
+			expected:    "project_name_test_xyz",
+			expectError: false,
+			replacements: messages.CreateResourceMsg{
+				ProjectName: "project_name_test",
+			},
 		},
 		{
-			name:     "No replacement",
-			data:     "xyz",
-			expected: "xyz",
+			name:        "No replacement",
+			data:        "xyz",
+			expected:    "xyz",
+			expectError: false,
+			replacements: messages.CreateResourceMsg{
+				ProjectName: "project_name_test",
+			},
+		},
+		{
+			name:         "Can't find replacement",
+			data:         "{{ProjectName}}",
+			expected:     "",
+			expectError:  true,
+			replacements: messages.CreateResourceMsg{},
 		},
 	}
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			result := renameFile(tc.data, replacements)
+			result, err := renameFile(tc.data, &tc.replacements)
+			if tc.expectError {
+				if err == nil {
+					t.Error("expected error, got nil")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+
 			if result != tc.expected {
 				t.Errorf("Test %s failed: Expected %s, got %s", tc.name, tc.expected, result)
 			}
@@ -236,6 +280,81 @@ func TestCreateDirectory(t *testing.T) {
 			if _, err := os.Stat(tc.path); os.IsNotExist(err) {
 				t.Errorf("directory %s was not created", tc.path)
 			}
+		})
+	}
+}
+
+func TestCopyFiles(t *testing.T) {
+	tcs := []struct {
+		name         string
+		fsys         fstest.MapFS
+		replacements messages.CreateResourceMsg
+		destDir      string
+		expected     []string
+		expectError  bool
+	}{
+		{
+			name: "Basic copy",
+			fsys: fstest.MapFS{
+				"src/{{ProjectName}}":                     {Data: []byte("project content")},
+				"src/file1.txt":                           {Data: []byte("file 1 content")},
+				"src/file2.txt":                           {Data: []byte("file 2 content")},
+				"src/nested_src/file1.txt":                {Data: []byte("nested file 1 content")},
+				"src/{{ProjectName}}/file2.txt":           {Data: []byte("project file 2 content")},
+				"src/{{ProjectName}}/{{ProjectName}}.txt": {Data: []byte("project project content")},
+			},
+			replacements: messages.CreateResourceMsg{
+				ProjectName: "test_project_name",
+			},
+			destDir: "dest",
+			expected: []string{
+				"dest/test_project_name",
+				"dest/file1.txt",
+				"dest/file2.txt",
+				"dest/nested_src/file1.txt",
+				"dest/test_project_name/file2.txt",
+				"dest/test_project_name/test_project_name.txt",
+			},
+			expectError: false,
+		},
+		{
+			name: "Copy no project name",
+			fsys: fstest.MapFS{
+				"src/{{ProjectName}}":                     {Data: []byte("project content")},
+				"src/file1.txt":                           {Data: []byte("file 1 content")},
+				"src/file2.txt":                           {Data: []byte("file 2 content")},
+				"src/nested_src/file1.txt":                {Data: []byte("nested file 1 content")},
+				"src/{{ProjectName}}/file2.txt":           {Data: []byte("project file 2 content")},
+				"src/{{ProjectName}}/{{ProjectName}}.txt": {Data: []byte("project project content")},
+			},
+			replacements: messages.CreateResourceMsg{},
+			destDir:      "dest",
+			expectError:  true,
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			err := copyFiles(tc.fsys, "src", tc.destDir, &tc.replacements)
+
+			if tc.expectError {
+				if err == nil {
+					t.Error("expected error got nil")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			for _, path := range tc.expected {
+				if _, err := os.Stat(path); os.IsNotExist(err) {
+					t.Errorf("expected file not found: %s", path)
+				}
+			}
+
+			os.RemoveAll(tc.destDir)
 		})
 	}
 }

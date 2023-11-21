@@ -127,11 +127,17 @@ func checkRequiredFields(fields ...interface{}) error {
 func copyFiles(fsys fs.FS, src, dest string, replacements *messages.CreateResourceMsg) error {
 	return fs.WalkDir(fsys, src, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
+      os.RemoveAll(dest)
 			return err
 		}
 
 		relativePath, _ := filepath.Rel(src, path)
-		newPath := filepath.Join(dest, renameFile(relativePath, replacements))
+		newPath, err := renameFile(relativePath, replacements)
+		if err != nil {
+      os.RemoveAll(dest)
+			return err
+		}
+		newPath = filepath.Join(dest, newPath)
 
 		if d.IsDir() {
 			return createDirectory(newPath)
@@ -174,8 +180,7 @@ func createFile(fsys fs.FS, src, dest string, replacements *messages.CreateResou
 }
 
 // renameFile replaces placeholders in the data string with values from the replacements struct.
-func renameFile(data string, replacements *messages.CreateResourceMsg) string {
-	// Użycie odbicia do dostępu do pól struktury
+func renameFile(data string, replacements *messages.CreateResourceMsg) (string, error) {
 	v := reflect.ValueOf(replacements).Elem()
 
 	for i := 0; i < v.NumField(); i++ {
@@ -184,8 +189,12 @@ func renameFile(data string, replacements *messages.CreateResourceMsg) string {
 
 		placeholder := fmt.Sprintf("{{%s}}", field.Name)
 		if strings.Contains(data, placeholder) {
-			data = strings.ReplaceAll(data, placeholder, fmt.Sprintf("%v", value.Interface()))
+			if value.IsValid() && !value.IsZero() {
+				data = strings.ReplaceAll(data, placeholder, fmt.Sprintf("%v", value.Interface()))
+			} else {
+				return "", fmt.Errorf("placeholder can not be replaced %s", data)
+			}
 		}
 	}
-	return data
+	return data, nil
 }
