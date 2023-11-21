@@ -29,3 +29,4 @@ You need to provide configuration details.
 - support for multiple graphql resolver
 - apollo federation support
 - scrollable columns
+- translations
