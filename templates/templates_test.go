@@ -3,7 +3,6 @@ package templates
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"testing"
 	"testing/fstest"
 
@@ -350,10 +349,8 @@ func TestCopyFiles(t *testing.T) {
 			}
 
 			for _, path := range tc.expected {
-				normalizedPath := filepath.ToSlash(path)
-
-				if _, err := os.Stat(normalizedPath); os.IsNotExist(err) {
-					t.Errorf("expected file not found: %s", normalizedPath)
+				if _, err := os.Stat(path); os.IsNotExist(err) {
+					t.Errorf("expected file not found: %s", path)
 				}
 			}
 
