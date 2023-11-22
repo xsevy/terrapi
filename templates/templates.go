@@ -56,7 +56,7 @@ func (r *creationRecord) rollback() {
 
 // CreateResources creates resources based on the specified ID
 func CreateResources(id, dest string, replacements *messages.CreateResourceMsg) error {
-	src := fmt.Sprintf("source/%s", id)
+	src := filepath.Join("source", id)
 	var f func(src, dest string, replacements *messages.CreateResourceMsg) error
 
 	switch id {
