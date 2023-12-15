@@ -3,12 +3,13 @@ package messages
 import tea "github.com/charmbracelet/bubbletea"
 
 type CreateResourceMsg struct {
-	ID               string
-	ProjectName      string
-	LambdaRuntime    string
-	AWSRegion        string
-	BackendBucket    string
-	BackendLockTable string
+	ID                       string
+	ProjectName              string
+	LambdaRuntime            string
+	AWSRegion                string
+	BackendBucket            string
+	BackendLockTable         string
+	AuthorizerLambdaFunction string
 }
 
 type createResourceOption func(*CreateResourceMsg)
@@ -47,5 +48,11 @@ func WithBackendBucket(bucket string) createResourceOption {
 func WithBackendLockTable(table string) createResourceOption {
 	return func(msg *CreateResourceMsg) {
 		msg.BackendLockTable = table
+	}
+}
+
+func WithAuthorizerLambdaFunction(lambda string) createResourceOption {
+	return func(msg *CreateResourceMsg) {
+		msg.AuthorizerLambdaFunction = lambda
 	}
 }

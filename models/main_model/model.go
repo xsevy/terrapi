@@ -55,19 +55,7 @@ func (m *mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		newMenu, cmd = m.menu.Update(msg)
 		m.menu = newMenu.(*menu.MenuModel)
 	case messages.CreateResourceMsg:
-		replacements := map[string]interface{}{
-			"project_name": msg.ProjectName,
-		}
-
-		switch msg.ID {
-		case helpers.ResourceIDs.CreateAppSyncAPI:
-			replacements["aws_region"] = msg.AWSRegion
-			replacements["backend_bucket"] = msg.BackendBucket
-			replacements["backend_lock_table"] = msg.BackendLockTable
-		case helpers.ResourceIDs.CreateAppSyncDataSource:
-			replacements["lambda_runtime"] = msg.LambdaRuntime
-		}
-		err := templates.CreateResources(msg.ID, "./", replacements)
+		err := templates.CreateResources(msg.ID, "./", &msg)
 		if err != nil {
 			panic(err)
 		}

@@ -75,6 +75,7 @@ func (m *SetupColumnModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						messages.WithAWSRegion(m.elements[1].Value()),
 						messages.WithBackendBucket(m.elements[2].Value()),
 						messages.WithBackendLockTable(m.elements[3].Value()),
+						messages.WithAuthorizerLambdaFunction(m.elements[4].Value()),
 					)
 				case helpers.ResourceIDs.CreateAppSyncDataSource:
 					cmd = messages.CreateResource(
@@ -176,8 +177,8 @@ func (m *SetupColumnModel) setElements() {
 			bubbles.NewTextInput("Name:", "name", 32),
 			bubbles.NewListModel("Region:", appsyncRegions, true),
 			bubbles.NewListModel("Backend bucket:", s3Buckets, true),
-			bubbles.NewListModel("Authorizer function:", lambdaFunctions, true),
 			bubbles.NewListModel("State lock:", dynamoDBTables, true),
+			bubbles.NewListModel("Authorizer function:", lambdaFunctions, true),
 			bubbles.NewButtonModel("Submit", false),
 		}
 	case helpers.ResourceIDs.CreateAppSyncDataSource:
