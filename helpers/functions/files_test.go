@@ -77,6 +77,7 @@ dolor sit amet`,
 					_, _ = f.WriteString(tc.existingFileContent)
 				}
 			}
+			defer os.RemoveAll(filePath)
 
 			err := AppendTextToFile(filePath, tc.textToAppend, tc.fromNextLine)
 
@@ -92,10 +93,11 @@ dolor sit amet`,
 			if string(content) != tc.expectedFileContent {
 				t.Errorf("expected %s, got %s", tc.expectedFileContent, string(content))
 			}
-
-			if tc.fileExists {
-				os.RemoveAll(filePath)
-			}
 		})
 	}
 }
+
+// func TestCreateEmptyFile(t *testing.T) {
+//   filePath := "tmp/"
+//   err := CreateEmptyFile(filePath string)
+// }
