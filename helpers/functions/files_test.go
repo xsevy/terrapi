@@ -97,7 +97,16 @@ dolor sit amet`,
 	}
 }
 
-// func TestCreateEmptyFile(t *testing.T) {
-//   filePath := "tmp/"
-//   err := CreateEmptyFile(filePath string)
-// }
+func TestCreateEmptyFile(t *testing.T) {
+	filePath := "tmp/file.txt"
+	err := CreateEmptyFile(filePath)
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+	}
+	defer os.RemoveAll("tmp/")
+
+	_, err = os.Stat(filePath)
+	if os.IsNotExist(err) {
+		t.Error("file not exists")
+	}
+}
