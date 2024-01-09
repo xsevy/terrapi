@@ -87,7 +87,7 @@ func createAppSyncDataSource(src, dest string, replacements *messages.CreateReso
 
 	// adding new module to main file
 	newModuleContent := fmt.Sprintf(newModuleContent, replacements.ProjectName, replacements.ProjectName)
-	if err := functions.AppendTextToFile(terraformApiMainFileName, newModuleContent); err != nil {
+	if err := functions.AppendTextToFile(terraformApiMainFileName, newModuleContent, true); err != nil {
 		return err
 	}
 
@@ -98,7 +98,7 @@ func createAppSyncDataSource(src, dest string, replacements *messages.CreateReso
 		replacements.ProjectName,
 		replacements.ProjectName,
 	)
-	if err := functions.AppendTextToFile(terraformDataSourcesFileName, newDataSourceContent); err != nil {
+	if err := functions.AppendTextToFile(terraformDataSourcesFileName, newDataSourceContent, true); err != nil {
 		return err
 	}
 

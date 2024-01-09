@@ -1,18 +1,32 @@
 package functions
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 )
 
 // AppendTextToFile appends a string to a file
-func AppendTextToFile(filename string, content string) error {
+func AppendTextToFile(filename string, content string, fromNextLine bool) error {
+	if len(content) < 1 {
+		return errors.New("empty file content")
+	}
+
+	_, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return err
+	}
+
 	f, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
+
+	if fromNextLine {
+		content = "\n" + content
+	}
 
 	_, err = f.WriteString(content)
 
