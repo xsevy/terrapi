@@ -59,7 +59,7 @@ func TestAppendTextToFile(t *testing.T) {
 			textToAppend:        "dolor sit amet",
 			expectedFileContent: `lorem ipsum
 dolor sit amet`,
-			fromNextLine:        true,
+			fromNextLine: true,
 		},
 	}
 

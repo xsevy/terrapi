@@ -25,7 +25,7 @@ func main() {
 		lambdaClient,
 		appsyncClient,
 		s3Client,
-    dynamoDBClient,
+		dynamoDBClient,
 		false,
 	)
 	menu := menu.NewMenuModel(selectColumn, setup_column)
