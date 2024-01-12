@@ -175,10 +175,10 @@ func (m *SetupColumnModel) setElements() {
 
 		m.elements = []navigation.FormField{
 			bubbles.NewTextInput("Name:", "name", 32),
-			bubbles.NewListModel("Region:", appsyncRegions, true),
-			bubbles.NewListModel("Backend bucket:", s3Buckets, true),
-			bubbles.NewListModel("State lock:", dynamoDBTables, true),
-			bubbles.NewListModel("Authorizer function:", lambdaFunctions, true),
+			bubbles.NewListModel("Region:", appsyncRegions, true, false),
+			bubbles.NewListModel("Backend bucket:", s3Buckets, true, false),
+			bubbles.NewListModel("State lock:", dynamoDBTables, true, false),
+			bubbles.NewListModel("Authorizer function:", lambdaFunctions, true, false),
 			bubbles.NewButtonModel("Submit", false),
 		}
 	case helpers.ResourceIDs.CreateAppSyncDataSource:
@@ -199,7 +199,7 @@ func (m *SetupColumnModel) setElements() {
 
 		m.elements = []navigation.FormField{
 			bubbles.NewTextInput("Name:", "name", 32),
-			bubbles.NewListModel("Runtime", lambdaRuntimes, true),
+			bubbles.NewListModel("Runtime", lambdaRuntimes, true, false),
 			bubbles.NewButtonModel("Submit", false),
 		}
 	}
