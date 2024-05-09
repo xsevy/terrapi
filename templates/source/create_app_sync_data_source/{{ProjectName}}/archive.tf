@@ -2,6 +2,7 @@ data "archive_file" "zip_the_python_code" {
   type        = "zip"
   source_dir  = "${local.lambda_source_dir}/"
   output_path = local.lambda_zip_path
+  excludes    = ["requirements.txt", "requirements-dev.txt"]
 }
 
 data "archive_file" "zip_layer" {
