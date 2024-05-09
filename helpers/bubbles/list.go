@@ -27,12 +27,13 @@ type ListModel struct {
 	focused   bool
 }
 
-func NewListModel(title string, items []string, sorted bool, initialSelected uint) *ListModel {
+func NewListModel(title string, items []string, sorted bool, focused bool, initialSelected int) *ListModel {
 	lm := ListModel{
 		keys:      helpers.Keys,
 		title:     title,
 		selected:  navigation.Selected(initialSelected),
 		paginator: NewPaginator(5, len(items)),
+		focused:   focused,
 	}
 	if sorted {
 		lm.items = functions.SortSliceCaseInsensitive(items)
